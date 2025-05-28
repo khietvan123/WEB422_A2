@@ -16,16 +16,19 @@ let page = 1;
 const perPage = 10;
 let searchName = null;
 
-async function loadListingsData() {
+function loadListingsData() {
+  console.log("loadlistingsData")
     const url = searchName ?
-    `/api/listings?page=${page}&perPage=${perPage}&name=${name}`:
-    `/api/listings?page=${page}&perPage=${perPage}`;
+    `https://web-422-a1-rosy.vercel.app/api/listings?page=${page}&perPage=${perPage}&name=${searchName}`:
+    `https://web-422-a1-rosy.vercel.app/api/listings?page=${page}&perPage=${perPage}`;
 
     fetch(url)
     .then(res => {
-    return res.ok ? res.json() : Promise.reject(res.status);
+      console.log(res);
+      return res.ok ? res.json() : Promise.reject(res.status);
     })
     .then(data => {
+      //console.log(data);
     if(data.length){
         const rows = data.map(listing => `
           <tr data-id="${listing._id}">
@@ -39,18 +42,21 @@ async function loadListingsData() {
             </td>
           </tr>
         `).join("");
-        //click
+        tbody = document.querySelector('tbody');
         tbody.innerHTML = rows;
         document.getElementById("current-page").textContent = page;
          document.querySelectorAll("#listingsTable tbody tr").forEach(row => {
           row.addEventListener("click", () => {
             const id = row.getAttribute("data-id");
 
-            fetch(`/api/listings/${id}`)
+            fetch(`https://web-422-a1-rosy.vercel.app/api/listings/${id}`)
               .then(res => res.ok ? res.json() : Promise.reject(res.status))
               .then(details => {
-                document.querySelector("#detailsModal .modal-title").textContent = details.name;
-                document.querySelector("#detailsModal .modal-body").innerHTML = `
+                const detailName = document.querySelector("#detailsModal .modal-title");
+                const modalBody = document.querySelector("#detailsModal .modal-body");
+
+                detailName.textContent = details.name;
+                modalBody.innerHTML = `
                   <img 
                     id="photo" 
                     onerror="this.onerror=null;this.src='https://placehold.co/600x400?text=Photo+Not+Available'" 
@@ -61,7 +67,6 @@ async function loadListingsData() {
                   <strong>Room:</strong> ${details.room_type}<br>
                   <strong>Bed:</strong> ${details.bed_type} (${details.beds})
                 `;
-
                 const modal = new bootstrap.Modal(document.getElementById("detailsModal"));
                 modal.show();
               })
@@ -70,6 +75,8 @@ async function loadListingsData() {
               });
           });
         });
+
+
     }else{
         if (page > 1) {
           page--;
@@ -90,3 +97,43 @@ async function loadListingsData() {
 
 
 }
+
+document.addEventListener("DOMContentLoaded",()=>{
+  loadListingsData();
+
+  const previousPageButton = document.querySelector("#previous-page");
+  const nextPageButton = document.querySelector("#next-page");
+  //const searchForm = document.querySelector("#searchForm");
+  const clearForm = document.querySelector("#clearForm");
+  previousPageButton.addEventListener("click",()=>{
+    if(page>1){
+      page--;
+      loadListingsData();
+    }
+  });
+
+  nextPageButton.addEventListener("click",()=>{
+    page++;
+    loadListingsData();
+  });
+
+  // searchForm.addEventListener("submit",(event)=>{
+  //   event.preventDefault();
+  //   searchName = document.getElementById("name").value;
+  //   page = 1;
+  //   loadListingsData();
+  // });
+  document.getElementById("searchForm").addEventListener("submit",(e)=>{
+    e.preventDefault();
+    searchName = document.getElementById("name").value;
+    page = 1;
+    console.log(searchName);
+    loadListingsData();
+  });
+
+  clearForm.addEventListener("click",()=>{
+    document.getElementById("name").value = ""; //empty string
+    searchName = null;
+    loadListingsData();
+  });
+});
